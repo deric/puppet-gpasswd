@@ -61,17 +61,16 @@ Puppet::Type.type(:group).provide :gpasswd, :parent => Puppet::Type::Group::Prov
 
   def members=(members)
     cmd = []
-    to_be_added = members.dup
+    to_be_added = members.dup.sort!
     if @resource[:attribute_membership] == :minimum
       to_be_added = to_be_added | @objectinfo.mem
     else
       # inclusive strategy
       # assuming that provided members are complete set
       # we mark rest for removal
-      puppet_members = members.dup.sort!
       # @objectinfo contains users with ensure => absent
-      to_be_removed = (@objectinfo.mem - puppet_members).sort
-      to_be_added = (puppet_members - @objectinfo.mem).sort
+      to_be_removed = (@objectinfo.mem - to_be_added).sort
+      to_be_added = (to_be_added - @objectinfo.mem).sort
 
       not to_be_removed.empty? and cmd += to_be_removed.map { |x|
         [ command(:delmember),'-d',x,@resource[:name] ].shelljoin
