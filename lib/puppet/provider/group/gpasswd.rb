@@ -20,9 +20,18 @@ Puppet::Type.type(:group).provide :gpasswd, :parent => Puppet::Type::Group::Prov
     # to be added from scratch.
     cmd = Array(super.map{|x| x = "#{x}"}.shelljoin)
 
-    @resource[:members] and cmd += @resource[:members].map{ |x|
+    @resource[:members] and cmd += @resource[:members].map do |x|
       [ command(:addmember),'-a',x,@resource[:name] ].shelljoin
-    }
+    end
+
+    # A bit hacky way how to update /etc/group in a single shell session
+    # Executing [ 'groupadd somegrp', 'gpasswd -a user somegrp'] does not modify
+    # /etc/group in current session (two Puppet runs are required).
+    # see: https://github.com/deric/puppet-accounts/issues/60
+    if @resource[:members] and @resource[:members].size == 1
+      user = @resource[:members].first
+      cmd << "sed -i.bak -e 's/^\\(#{user}\\)\\(.*\\)/\\1\\2#{user}/g' /etc/group"
+    end
 
     mod_group(cmd)
 
