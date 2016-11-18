@@ -8,6 +8,7 @@ describe Puppet::Type.type(:group).provider(:gpasswd) do
     described_class.stubs(:command).with(:modify).returns '/usr/sbin/groupmod'
     described_class.stubs(:command).with(:addmember).returns '/usr/bin/gpasswd'
     described_class.stubs(:command).with(:delmember).returns '/usr/bin/gpasswd'
+    described_class.stubs(:command).with(:modmember).returns '/usr/bin/gpasswd'
   end
 
   let(:resource) { Puppet::Type.type(:group).new(:name => 'mygroup', :provider => provider) }
@@ -112,21 +113,14 @@ describe Puppet::Type.type(:group).provider(:gpasswd) do
     describe "when adding exclusive group members to an existing group with members" do
       it "should add all new members and delete all, non-matching, existing members" do
         old_members = ['old_one','old_two','old_three','test_three']
-        members = ['test_one','test_two','test_three']
+        members = ['queens','darwin','kings','trinity']
         Etc.stubs(:getgrnam).with('mygroup').returns(
-          Struct::Group.new('mygroup','x','99999',old_members)
+          Struct::Group.new('mygroup','x','1234',old_members)
         )
-        resource[:attribute_membership] = 'inclusive'
+        resource[:attribute_membership] = :inclusive
         resource[:members] = members
-
-        (resource[:members] - old_members).each do |to_add|
-          provider.expects(:execute).with("/usr/bin/gpasswd -a #{to_add} mygroup",
+        provider.expects(:execute).with("/usr/bin/gpasswd -M #{members.sort.join(',')} mygroup",
             :custom_environment => {})
-        end
-        (old_members - resource[:members]).each do |to_del|
-          provider.expects(:execute).with("/usr/bin/gpasswd -d #{to_del} mygroup",
-            :custom_environment => {})
-        end
         provider.create
         provider.members=(members)
       end

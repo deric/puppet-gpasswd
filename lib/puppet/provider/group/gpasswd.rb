@@ -9,7 +9,8 @@ Puppet::Type.type(:group).provide :gpasswd, :parent => Puppet::Type::Group::Prov
   EOM
 
   commands  :addmember => 'gpasswd',
-            :delmember => 'gpasswd'
+            :delmember => 'gpasswd',
+            :modmember => 'gpasswd'
 
   has_feature :manages_members unless %w{HP-UX Solaris}.include? Facter.value(:operatingsystem)
   has_feature :libuser if Puppet.features.libuser?
@@ -64,26 +65,20 @@ Puppet::Type.type(:group).provide :gpasswd, :parent => Puppet::Type::Group::Prov
     to_be_added = members.dup.sort!
     if @resource[:attribute_membership] == :minimum
       to_be_added = to_be_added | @objectinfo.mem
+      not to_be_added.empty? and cmd += to_be_added.map { |x|
+        [ command(:addmember),'-a',x,@resource[:name] ].shelljoin
+      }
+      mod_group(cmd)
     else
       # inclusive strategy
       # assuming that provided members are complete set
-      # we mark rest for removal
-      # @objectinfo contains users with ensure => absent
-      to_be_removed = (@objectinfo.mem - to_be_added).sort
-      to_be_added = (to_be_added - @objectinfo.mem).sort
-
-      not to_be_removed.empty? and cmd += to_be_removed.map { |x|
-        [ command(:delmember),'-d',x,@resource[:name] ].shelljoin
-      }
-
+      unless to_be_added.empty?
+        cmd << [ command(:modmember),'-M',to_be_added.join(','), @resource[:name] ].shelljoin
+        mod_group(cmd)
+      end
     end
+   end
 
-    not to_be_added.empty? and cmd += to_be_added.map { |x|
-      [ command(:addmember),'-a',x,@resource[:name] ].shelljoin
-    }
-
-    mod_group(cmd)
-  end
 
   private
 
