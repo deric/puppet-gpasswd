@@ -6,6 +6,9 @@ group :development, :test do
   gem 'puppet-lint'
   gem 'puppet-blacksmith',  '> 3.0'
   gem 'metadata-json-lint'
+  if RUBY_VERSION < "2.0.0"
+    gem 'json', '< 2.0' # newer versions requires at least ruby 2.0
+  end
 end
 
 if puppetversion = ENV['PUPPET_GEM_VERSION']
