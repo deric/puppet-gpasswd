@@ -104,7 +104,7 @@ Puppet::Type.type(:group).provide :gpasswd, :parent => Puppet::Type::Group::Prov
   def mod_group(cmds)
     cmds.each do |run_cmd|
       begin
-        execute(run_cmd,:custom_environment => @custom_environment)
+        execute(run_cmd,{:custom_environment => @custom_environment, :failonfail => true, :combine => true})
       rescue Puppet::ExecutionFailure => e
         if $?.exitstatus == 3 then
           Puppet.warning("Modifying #{@resource[:name]} => #{e}")
