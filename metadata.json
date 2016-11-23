@@ -1,6 +1,6 @@
 {
   "name": "deric-gpasswd",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "Tomas Barton <barton.tomas@gmail.com>",
   "summary": "Adds support for :manages_members to the Linux group native type",
   "license": "Apache-2.0",
